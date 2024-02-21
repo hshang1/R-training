@@ -1,0 +1,58 @@
+#R training Q3
+
+#Loading files
+input1 <- read.csv("/mnt/exports/shared/home/hshang/input-files-selected/input1.txt", sep = "\t", header=TRUE)
+input2 <- read.csv("/mnt/exports/shared/home/hshang/input-files-selected/input2.txt", sep = "\t", header=TRUE)
+
+#Merging
+df <- merge(input1, input2)
+head(df)
+
+#Repeat the above comparison using a Wilcoxon test and fold-changes.  
+library("BoutrosLab.statistics.general")
+
+#Fold change
+i=1
+group1 <- c(rep(TRUE, 3), rep(FALSE,9))
+group2 <- c(rep(FALSE,3), rep(TRUE,9))
+foldchange <- c()
+
+for (x in 1:500) {
+    i=i
+    y <- as.vector(df[,c(2:13)][i,])
+    result <- get.foldchange(y, group1, group2, logged=FALSE)
+    foldchange <- append(foldchange, result)
+    i=i+1
+}
+
+head(foldchange)
+
+#Wilcoxon test  
+i = 1
+wilcox <- c()
+
+for (x in 1:500) {
+    i=i
+    three = data.frame( patient = c(1:3), exp = c(df$Patient1[i],df$Patient2[i],df$Patient3[i]))
+    nine = data.frame( patient = c(4:12), exp = c(df$Patient4[i],df$Patient5[i],df$Patient6[i],df$Patient7[i],df$Patient8[i],df$Patient9[i],df$Patient10[i], df$Patient11[i], df$Patient12[i]))
+    wilcox_p <- wilcox.test(three$exp, nine$exp, paired=FALSE)
+    wilcox <- append(wilcox, wilcox_p$p.value)
+    i=i+1
+}
+
+head(wilcox)
+
+#Create suitable plots to compare the results and write a paragraph describing the similarities/differences.
+library("BoutrosLab.plotting.general")
+
+#Histogram of Wilcoxon p-values and log(p-values) 
+hist <- create.histogram(wilcox, xlab.label="Wilcox p-value", ylab.label="count")	
+hist
+
+loghist <- create.histogram(log(wilcox), xlab.label="log(Wilcox p-value)", ylab.label="count")	
+loghist
+
+#By Wilcoxon, more genes are identified with significant p-values than by our t-test 
+#To identify whether the Wilcoxon test or the t-test results are more appropriate, we would need to investigate whether gene expression across both groups follows a normal distribution 
+#Should they follow a normal distribution, we would more readily rely on the t-test results and vice-versa for the Wilcoxon test 
+#What remains true across both the Wilcoxon and t-test results is that the overall distribution of our p-values remains skewed to the right, meaning the majority of genes are not expressed at levels that are significantly different between the two groups 
