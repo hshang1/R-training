@@ -1,0 +1,95 @@
+#Calculate the median of the first three columns for each gene
+
+#Loading files
+input1 <- read.csv("/mnt/exports/shared/home/hshang/input-files-selected/input1.txt", sep = "\t", header=TRUE)
+input2 <- read.csv("/mnt/exports/shared/home/hshang/input-files-selected/input2.txt", sep = "\t", header=TRUE)
+
+#Calculating median for first group 
+library(dplyr)
+firstthree_median <- input1 %>% 
+rowwise() %>%
+mutate(m = median(c(Patient1, Patient2, Patient3)))
+
+#Use a permutation test to estimate the expected value for each gene:
+#a. Randomly select three columns from amongst all 12
+df<- merge(input1,input2)
+nums <- c(2:13)
+nums
+random_int <- sample(x=nums, size=3) #patient 6,7,8
+
+#Saving random selections 
+temp <- data.frame(rand1 = df[,c(random_int[1]:random_int[1])], 
+rand2 = df[,c(random_int[2]:random_int[2])],
+rand3 = df[,c(random_int[3]:random_int[3])])
+
+head(temp)
+
+#b. Calculate their median
+rand_df_median <-
+temp %>%
+rowwise() %>%
+mutate(m = median(c(rand1, rand2, rand3)))
+
+#c. Determine if this value is larger or smaller than that of the first 3 columns
+compare <- data.frame(firstthree_median = firstthree_median$m, random_median = rand_df_median$m, firstthreebigger = firstthree_median$m > rand_df_median$m
+
+#d. Repeat a.-c. 1000 times
+genelist <- data.frame(GeneID = df$GeneID)
+for (x in 1:1000) {
+
+    #Choose random 3 cols from df 
+    random_int <- sample(x=nums, size=3) 
+
+    #Save cols from df 
+    temp <- data.frame(rand1 = df[,c(random_int[1]:random_int[1])], 
+    rand2 = df[,c(random_int[2]:random_int[2])],
+    rand3 = df[,c(random_int[3]:random_int[3])])
+
+    #Calculate their median 
+    rand_df_median <-
+    temp %>%
+    rowwise() %>%
+    mutate(m = median(c(rand1, rand2, rand3)))
+
+    #Compare if median is larger or smaller than that of the first 3 columns 
+    compare <- data.frame(firstthree_median = firstthree_median$m, 
+        random_median = rand_df_median$m, 
+        greater = rand_df_median$m >= firstthree_median$m)
+
+    #Saving bootstrapped sample data
+    if (x ==1)
+    {
+        final_data <- cbind(genelist, compare$greater) 
+        observed <- data.frame(random_m = compare$random_median)
+    }else{
+        final_data<- cbind(final_data, compare$greater) 
+        observed <- cbind(observed,compare$random_median)
+    }
+}
+
+head(final_data)
+
+#Changing col names to be unique
+colnames(final_data) <- c("GeneID", 1:1000)
+colnames(observed) <- paste(c(1:1000),"observed",sep="_") 
+
+#Use the frequencies in to estimate a p-value for each gene (two-sided)
+#Calculated pval using the formula: pval = 2* sum(s >= s0)/N
+freq <- final_data %>%
+rowwise() %>%
+mutate(pval = rowSums(across(2:1000))/1000 * 2)
+
+#Plot a histogram of the (unadjusted) p-values. What does this tell you?
+#Histogram shows that none of them are significant 
+library("BoutrosLab.plotting.general")
+hist_t <- create.histogram(freq$pval, xlab.label="Ttest p-value", ylab.label="count")	
+hist_t
+
+#Perform a false-discovery adjustment on the p-values  
+bon_pval <- p.adjust(freq$pval, method = "bonferroni", n = length(freq$pval))
+fdr_pval <- p.adjust(freq$pval, method = "fdr", n = length(freq$pval))
+
+#Write your results (gene ID, observed median, expected median, p-value, adjusted p-value) to file in a tab-delimited format
+exportdf <- data.frame(genelist, expected_median = compare$firstthree_median, observed, pval = freq$pval, bon_pval = bon_pval, fdr_pval = fdr_pval)
+head(exportdf)
+write.csv(exportdf, file = "/mnt/exports/shared/home/hshang/Q5_bootdf", row.names=TRUE)
