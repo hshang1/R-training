@@ -1,5 +1,6 @@
+#Below are answers to Q1 of R training
 
-#installing packages
+#Installing packages
 #to run command + enter - run each one by one 
 install.packages("BoutrosLab.utilities_1.9.10.tar.gz", type = "source", dependencies = TRUE, repos = NULL);
 install.packages("BoutrosLab.statistics.general_2.1.3.tar", type = "source", dependencies = TRUE, repos = NULL);
@@ -13,32 +14,32 @@ library("BoutrosLab.plotting.general")
 #checking
 installed.packages()
 
-#Q1: reading AHR file
+#Reading AHR file
 AHRfile <- read.csv("/mnt/exports/shared/home/hshang/input-files-selected/AHR-test-file.txt", sep = "\t", header=TRUE)
 head(AHRfile)
 
-#Q2 + Q4: + 4: calculating t test and fold change 
+#Calculating t test and fold change 
 #create vectorized list and remove nas 
 x<- c(AHRfile['Control'],AHRfile['Treated'])
 y<- x[c(-9,18)]
 
-#create groups for control vs treated
+#Create groups for control vs treated
 group1 <- c(rep(TRUE, 8), rep(FALSE,8))
 group2 <- c(rep(FALSE,8), rep(TRUE,8))
 
-#calculate t-test and fold change 
+#Calculate t-test and fold change 
 #t-test value is 0.11, fold change is 1.1 so therefore insignificant change
 get.ttest.p.and.foldchange(y, group1, group2, logged=FALSE)
 
-#Q3: Wilcoxon test between control and treated
+#Wilcoxon test between control and treated
 #removing nas
 df <- AHRfile[-c(9),]
 
-#calculating wilcox test 
+#Calculating wilcox test 
 wilcox.test(df$Control, df$Treated, paired=TRUE)
 #V=8, p-val = 0.20; median difference between the two groups is zero (no difference)
 
-#rationality for wilcox- as the data is not normal, t test cannot be used and will need Wilcoxon test 
+#As the data is not normal, t test cannot be used and will need Wilcoxon test 
 shapiro.test(AHRfile$Control)
 #p= 0.07
 
