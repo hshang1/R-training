@@ -1,0 +1,64 @@
+#R training Q2 
+
+#Loading files
+input1 <- read.csv("/mnt/exports/shared/home/hshang/input-files-selected/input1.txt", sep = "\t", header=TRUE)
+input2 <- read.csv("/mnt/exports/shared/home/hshang/input-files-selected/input2.txt", sep = "\t", header=TRUE)
+
+head(input1) #contains tumors 1-3
+head(input2) #contains tumors 4-12
+
+#Combine the two files into one file that contains the data for all 12 tumours. Make sure that the three columns in input1.txt precede the nine columns in input2.txt. 
+#Do this in the following two ways, and verify that they produce the same result:
+#	a) Sort each file individually, and then use the cbind function
+sorted1 <- input1[order(input1$GeneID, decreasing = FALSE), ]
+sorted2 <- input2[order(input1$GeneID, decreasing = FALSE), ]
+final <- cbind(sorted1,sorted2)
+head(final)
+
+#	b) Use only the merge function
+df <- merge(input1, input2)
+head(df)
+
+#Perform a t-test comparing the first three tumours to the last nine tumours for *each* gene using a for-loop
+#gene exp for 1-3 vs. gene exp vs. 4-12 each each gene 
+
+#For single t-test for gene 1
+library("BoutrosLab.statistics.general")
+y <-  as.vector(t(df[,c(2:13)][1,]))
+group1 <- c(rep(TRUE, 3), rep(FALSE,9))
+group2 <- c(rep(FALSE,3), rep(TRUE,9))
+results <- get.ttest.p.and.foldchange(y, group1, group2, logged=FALSE)
+results[1]
+
+#Testing for loop for all 500 genes 
+i=1
+group1 <- c(rep(TRUE, 3), rep(FALSE,9))
+group2 <- c(rep(FALSE,3), rep(TRUE,9))
+pval = c()
+
+for (x in 1:500) {
+    i=i
+    y <- as.vector(df[,c(2:13)][i,])
+    results <- get.ttest.p.and.foldchange(y, group1, group2, logged=FALSE)
+    pval <- append(pval, results[1])
+    i=i+1
+}
+
+head(pval)
+
+#Plot a histogram of the p-values
+library("BoutrosLab.plotting.general")
+hist <- create.histogram(pval, xlab.label="p-value", ylab.label="count")	
+hist
+
+#Are your axis labels rotated 90 degrees?  If so, fix this.
+#No but would use the parameter x or yaxis.rot to change this 
+
+#Your histogram might look a bit weird in normal space, consider plotting it in log-space
+loghist <- create.histogram(log(pval), xlab.label="log(p-value)", ylab.label="count")	
+loghist
+
+#What does this distribution tell you?
+#log(0.05) = -1.3 so anything less than -1.3 is significant 
+#Majority of genes have overalapping mean expression levels in group 1 and group2 
+#Small number of genes <5 that are significantly different 
