@@ -1,0 +1,75 @@
+#What is multiple testing?
+    #Multiple testing refers to the testing multiple hypothesis at once within the same experiment, which can lead to a higher false positive rate as the same dataset may be analyzed multiple times. 
+    #Two methods for lower the chance of a higher false positive rate when running multiple hypotheses is the FDR and bonferroni correction. 
+
+#Recreating the histograms with FDR and bonferroni corrections 
+#Load files
+input1 <- read.csv("/mnt/exports/shared/home/hshang/input-files-selected/input1.txt", sep = "\t", header=TRUE) #group 1 tumors 1-3
+input2 <- read.csv("/mnt/exports/shared/home/hshang/input-files-selected/input2.txt", sep = "\t", header=TRUE) #group 2 tumors 4-12
+
+#Merge
+df <- merge(input1, input2)
+head(df)
+
+#Calculating p-values for t test
+library("BoutrosLab.statistics.general")
+
+i=1
+group1 <- c(rep(TRUE, 3), rep(FALSE,9))
+group2 <- c(rep(FALSE,3), rep(TRUE,9))
+ttest = c()
+
+for (x in 1:500) {
+    i=i
+    y <- as.vector(df[,c(2:13)][i,])
+    results <- get.ttest.p.and.foldchange(y, group1, group2, logged=FALSE)
+    ttest <- append(ttest, results[1])
+    i=i+1
+}
+
+head(ttest)
+
+#Calculating p-values for wilcoxon test
+i = 1
+wilcox <- c()
+
+for (x in 1:500) {
+    i=i
+    three = data.frame( patient = c(1:3), exp = c(df$Patient1[i],df$Patient2[i],df$Patient3[i]))
+    nine = data.frame( patient = c(4:12), exp = c(df$Patient4[i],df$Patient5[i],df$Patient6[i],df$Patient7[i],df$Patient8[i],df$Patient9[i],df$Patient10[i], df$Patient11[i], df$Patient12[i]))
+    wilcox_p <- wilcox.test(three$exp, nine$exp, paired=FALSE)
+    wilcox <- append(wilcox, wilcox_p$p.value)
+    i=i+1
+}
+
+head(wilcox)
+
+#Adjusting for Bonferroni and FDR corrections 
+bon_ttest <- p.adjust(ttest, method = "bonferroni", n = length(ttest))
+fdr_ttest <- p.adjust(ttest, method = "fdr", n = length(ttest))
+
+bon_wilcox <- p.adjust(wilcox, method = "bonferroni", n = length(wilcox))
+fdr_wilcox <- p.adjust(wilcox, method = "fdr", n = length(wilcox))
+
+#Creating comparable plots
+library("BoutrosLab.plotting.general")
+
+#Comparing uncorrected vs. corrected p-values from T-test and Wilcoxon 
+#Uncorrected ttest p-values and on log scale 
+hist_t <- create.histogram(ttest, xlab.label="Ttest p-value", ylab.label="count")	
+log_t <- create.histogram(log(ttest), xlab.label="log(Wilcox p-value)", ylab.label="count")	
+
+#Corrected ttest p-values and on log scale  
+bon_log_t <- create.histogram(log(bon_ttest), xlab.label="log(Ttest p-value bonferroni)", ylab.label="count") #no longer any significant	
+fdr_log_t <- create.histogram(log(fdr_ttest), xlab.label="log(Ttest p-value fdr)", ylab.label="count") #1-5 that may be still significant
+
+#Uncorrected wilcox p-values and on log scale
+hist_w <- create.histogram(wilcox, xlab.label="Wilcox p-value", ylab.label="count")	
+log_w <- create.histogram(log(wilcox), xlab.label="log(Wilcox p-value)", ylab.label="count") #more significant genes than by t-test
+
+#Corrected wilcox p-values and on log scale 
+bon_log_w <- create.histogram(log(bon_wilcox), xlab.label="log(Wilcox p-value bonferroni)", ylab.label="count") #no longer any significant	
+fdr_log_w <- create.histogram(log(fdr_wilcox), xlab.label="log(Wilcox p-value fdr)", ylab.label="count") #no longer any significant
+
+
+
