@@ -1,0 +1,6 @@
+#To this point all the analyses have been performed using standard R functions.  Fortunately the BoutrosLab repository has a variety of functions that will aid in making the plots and statistics.  Modify your code to use:
+#a) BoutrosLab.statistics.general	for all p-value extraction functions
+#b) BoutrosLab.plotting.general		for all plots
+#Make these modifications for all questions from Q2 onwards.
+
+#I used the boutros lab functions all of the Qs and not the standard R functions so was done this way already (on accident) :D
