@@ -1,0 +1,12 @@
+#Lastly it's important (critical in fact!) to describe your statistical analysis accurately and precisely.  
+#Write a publication-quality methods section describing what you've done.  Make sure you are appropriately referencing your methods with citations to the literature (specific reference format does not matter for this).
+
+#Methods
+---
+#A dataset was created evaluating the expression of 500 genes across 12 different tumors 
+#We evaluated whether gene expression in first 3 tumors was significantly different than the rest by a bootstrapped sampling method
+#We first calculated the median gene expression of the first three tumors across all 500 genes and then selected a random group of three tumors and also calculated their median gene expressions across all 500 genes.
+#We then compared whether the first group's median gene expression across all 500 genes was equal or higher than the second group to calculate an observed p-value for each gene by summing the number of observed median gene expression levels in the second group that were greater than or equal to the observed median gene expression levels in the first group across all 1000 bootstrapped experiments. 
+#In code, this is pval = 2* sum(s >= s0)/N where s = median gene expression of second group and s0 = median gene expression of first group  
+#At an alpha level of 0.05, we found that there was no significant difference in gene expression in the first three tumors compared to the rest
+#As expected, these results remained unchanged when applying FDR and bonferroni corrections to our p-values 
